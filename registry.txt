@@ -1,4 +1,0 @@
-mainaccountowner + 100
-ZT2D2v3lQvIrnUv8 + 0 
-LVh3zF9jQNjmamdd + 0 
-mainaccountowner + 50

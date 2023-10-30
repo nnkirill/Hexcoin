@@ -76,5 +76,8 @@ def transaction():
 
 
 
+
+
+
 print(registry_reading('existing addresses', 0))
 transaction()
