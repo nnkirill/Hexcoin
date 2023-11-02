@@ -5,7 +5,7 @@ import psycopg2
 import hashlib
 
 
-conn = psycopg2.connect(host = "localhost", dbname = 'hexcoin1', user = 'postgres', password = 'admin', port = 5432)
+conn = psycopg2.connect(host = "localhost", dbname = 'hexcoin', user = 'postgres', password = 'admin', port = 5432)
 cur = conn.cursor()
 
 
