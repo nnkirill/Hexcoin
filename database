@@ -1,0 +1,54 @@
+CREATE DATABASE hexcoin1;
+
+DROP TABLE IF EXISTS public.users;
+
+CREATE TABLE IF NOT EXISTS public.users
+(
+    id character(16) COLLATE pg_catalog."default",
+    password_hash_sha224 character(56) COLLATE pg_catalog."default",
+    password_hash_sha256 character(64) COLLATE pg_catalog."default",
+    account_balance numeric(13,10)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.users
+    OWNER to postgres;
+
+
+DROP PROCEDURE IF EXISTS public.create_user(character, character, character, numeric);
+
+CREATE OR REPLACE PROCEDURE public.create_user(
+	IN character,
+	IN character,
+	IN character,
+	IN numeric)
+LANGUAGE 'plpgsql'
+AS $BODY$
+
+BEGIN
+
+INSERT INTO Users(id, password_hash_sha224, password_hash_sha256, account_balance) VALUES ($1, $2, $3, $4);
+
+END;
+$BODY$;
+ALTER PROCEDURE public.create_user(character, character, character, numeric)
+    OWNER TO postgres;
+
+
+
+DROP PROCEDURE IF EXISTS public.sign_in(character);
+
+CREATE OR REPLACE PROCEDURE public.sign_in(
+	IN character)
+LANGUAGE 'plpgsql'
+AS $BODY$
+
+BEGIN
+
+SELECT * FROM Users WHERE id = $1;
+
+end;
+$BODY$;
+ALTER PROCEDURE public.sign_in(character)
+    OWNER TO postgres;
