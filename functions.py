@@ -4,6 +4,7 @@ import string
 import psycopg2
 import hashlib
 
+keys = {}
 
 conn = psycopg2.connect(host = "localhost", dbname = 'hexcoin', user = 'postgres', password = 'admin', port = 5432)
 cur = conn.cursor()
@@ -19,17 +20,16 @@ class Create_User:
         self.password = random_string()
         Create_User.passwords.update([(self.id, self.password)])
         
-        conn = psycopg2.connect(host = "localhost", dbname = 'hexcoin1', user = 'postgres', password = 'admin', port = 5432)
-        cur = conn.cursor()
-
+        conn = psycopg2.connect(host = "localhost", dbname = 'hexcoin', user = 'postgres', password = 'admin', port = 5432)
+        
         cur.execute("""CALL Create_user(%s, %s, %s, %s)""",(self.id, hashlib.sha224(self.password.encode()).hexdigest(), hashlib.sha256(self.password.encode()).hexdigest(), 0))
 
 
 
-def random_string() -> str:
+def random_string(a = 16) -> str:
     letters = string.ascii_letters
     letters += '1234567890'
-    random_string = ''.join(random.choice(letters) for i in range(16))
+    random_string = ''.join(random.choice(letters) for i in range(a))
     return random_string
 
 
@@ -42,10 +42,10 @@ def create_user() -> str(id):
 def sign_in(id, password) -> bin:
     pas = []
     try:
-        cur.execute("""SELECT password_hash_sha224 FROM Users WHERE id = %s """, (id,))
+        cur.execute("""SELECT password_hash_sha224 FROM users WHERE id = %s """, (id,))
         pas.append([(hashlib.sha224(password.encode())).hexdigest()])
         pas.append(list(cur.fetchone()))
-        cur.execute("""SELECT password_hash_sha256 FROM Users WHERE id = %s """, (id,))
+        cur.execute("""SELECT password_hash_sha256 FROM users WHERE id = %s """, (id,))
         pas.append([(hashlib.sha256(password.encode())).hexdigest()])
         pas.append(list(cur.fetchone()))
         if pas[0] == pas[1]:
@@ -56,10 +56,42 @@ def sign_in(id, password) -> bin:
         return 0
 
 
+def create_keys(id, password):
+    if sign_in(id, password) == 1:
+        (public_key, privet_key) = rsa.newkeys(512)
+        keys.update([(id , (public_key, privet_key))])
+        
+
+        cur.execute("""CALL delete_key(%s)""", (id,))
+        cur.execute("""CALL pub_key_value(%s, %s)""", (id, str(public_key)))
 
 
 
 
+
+           
+
+
+
+
+    else:
+        print('wrong id or password')
+
+
+
+def send_money():
+    pass
+
+
+a = Create_User()
+print(Create_User.passwords)
+create_keys('fOQIuvA0u107HeSb',"Id3p4wsGPGDZDQQy" )
+
+
+
+
+
+        
 conn.commit()
 cur.close()
 conn.close()

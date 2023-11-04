@@ -1,10 +1,10 @@
-CREATE DATABASE hexcoin1;
+CREATE DATABASE hexcoin;
 
 DROP TABLE IF EXISTS public.users;
 
 CREATE TABLE IF NOT EXISTS public.users
 (
-    id character(16) COLLATE pg_catalog."default",
+    id character(16) COLLATE pg_catalog."default" PRIMARY KEY,
     password_hash_sha224 character(56) COLLATE pg_catalog."default",
     password_hash_sha256 character(64) COLLATE pg_catalog."default",
     account_balance numeric(13,10)
@@ -52,3 +52,10 @@ end;
 $BODY$;
 ALTER PROCEDURE public.sign_in(character)
     OWNER TO postgres;
+
+
+create table public_keys
+(
+	id CHAR(16) REFERENCES users(id) PRIMARY KEY,
+	public_key VARCHAR(200)
+);
