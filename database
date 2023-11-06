@@ -16,6 +16,7 @@ ALTER TABLE IF EXISTS public.users
     OWNER to postgres;
 
 
+
 DROP PROCEDURE IF EXISTS public.create_user(character, character, character, numeric);
 
 CREATE OR REPLACE PROCEDURE public.create_user(
@@ -54,8 +55,60 @@ ALTER PROCEDURE public.sign_in(character)
     OWNER TO postgres;
 
 
-create table public_keys
+
+DROP TABLE IF EXISTS public.public_keys;
+
+CREATE TABLE IF NOT EXISTS public.public_keys
 (
-	id CHAR(16) REFERENCES users(id) PRIMARY KEY,
-	public_key VARCHAR(200)
-);
+    id character(16) COLLATE pg_catalog."default" NOT NULL,
+    public_key character varying(200) COLLATE pg_catalog."default",
+    CONSTRAINT public_keys_pkey PRIMARY KEY (id),
+    CONSTRAINT public_keys_id_fkey FOREIGN KEY (id)
+        REFERENCES public.users (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.public_keys
+    OWNER to postgres;
+
+
+
+DROP PROCEDURE IF EXISTS public.delete_key(character);
+
+CREATE OR REPLACE PROCEDURE public.delete_key(
+	IN character)
+LANGUAGE 'plpgsql'
+AS $BODY$
+
+begin
+
+delete from public_keys where id = $1;
+
+end;
+$BODY$;
+ALTER PROCEDURE public.delete_key(character)
+    OWNER TO postgres;
+
+
+
+DROP PROCEDURE IF EXISTS public.create_user(character, character, character, numeric);
+
+CREATE OR REPLACE PROCEDURE public.create_user(
+	IN character,
+	IN character,
+	IN character,
+	IN numeric)
+LANGUAGE 'plpgsql'
+AS $BODY$
+
+BEGIN
+
+INSERT INTO Users(id, password_hash_sha224, password_hash_sha256, account_balance) VALUES ($1, $2, $3, $4);
+
+END;
+$BODY$;
+ALTER PROCEDURE public.create_user(character, character, character, numeric)
+    OWNER TO postgres;

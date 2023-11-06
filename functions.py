@@ -1,3 +1,4 @@
+
 import rsa
 import random
 import string
@@ -56,36 +57,41 @@ def sign_in(id, password) -> bin:
         return 0
 
 
-def create_keys(id, password):
+def create_keys(id, password) -> rsa.key.PublicKey:
     if sign_in(id, password) == 1:
         (public_key, privet_key) = rsa.newkeys(512)
         keys.update([(id , (public_key, privet_key))])
         
-
+        print(type(public_key))
         cur.execute("""CALL delete_key(%s)""", (id,))
         cur.execute("""CALL pub_key_value(%s, %s)""", (id, str(public_key)))
-
-
-
-
-
-           
-
-
-
-
+        return public_key
     else:
         print('wrong id or password')
 
 
 
-def send_money():
-    pass
+def send_money(amount, recipient_id, id) -> bin:
+    if sign_in(id, str(input('пароль:'))) == 1:
+        (public_key, privet_key) = rsa.newkeys(512)
+        amount_c = rsa.encrypt(str(amount).encode(), public_key)
+        print(amount_c)
+        print(rsa.decrypt(amount_c, privet_key))
+        amount_c += b'1'
+        print(rsa.decrypt(amount_c, privet_key))
+
+    
+    else:
+        print(0)
+    
+
 
 
 a = Create_User()
 print(Create_User.passwords)
-create_keys('fOQIuvA0u107HeSb',"Id3p4wsGPGDZDQQy" )
+send_money(5,'kknn', str(input()))
+
+
 
 
 
