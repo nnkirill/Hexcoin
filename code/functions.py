@@ -6,12 +6,12 @@ import psycopg2
 import hashlib
 
 keys = {}
-
+number = 0
 conn = psycopg2.connect(host = "localhost", dbname = 'hexcoin', user = 'postgres', password = 'admin', port = 5432)
 cur = conn.cursor()
 
 
-class Create_User:
+class User:
     
     passwords = {}
     def __init__(self):
@@ -19,13 +19,33 @@ class Create_User:
            
         self.id = random_string()
         self.password = random_string()
-        Create_User.passwords.update([(self.id, self.password)])
+        User.passwords.update([(self.id, self.password)])
+        self.public_key = 0
+        self.privet_key = 0
         
-        conn = psycopg2.connect(host = "localhost", dbname = 'hexcoin', user = 'postgres', password = 'admin', port = 5432)
+        flops = 5
+        cooling = 1
         
-        cur.execute("""CALL Create_user(%s, %s, %s, %s)""",(self.id, hashlib.sha224(self.password.encode()).hexdigest(), hashlib.sha256(self.password.encode()).hexdigest(), 0))
+        
+        cur.execute("""CALL Create_user(%s, %s, %s, %s)""",(self.id, hashlib.sha224(self.password.encode()).hexdigest(), hashlib.sha256(self.password.encode()).hexdigest(), 1))
 
 
+    def create_keys(self) -> rsa.key.PublicKey:
+        if sign_in(self.id, self.password) == 1:
+            (public_key, privet_key) = rsa.newkeys(512)
+            keys.update([(id , (public_key, privet_key))])
+            self.public_key = public_key
+            self.privet_key = privet_key
+            cur.execute("""CALL delete_key(%s)""", (self.id,))
+            cur.execute("""CALL pub_key_value(%s, %s)""", (self.id, str(public_key)))
+        else:
+            print('wrong id or password')
+
+
+    def send_money(self, message, recipient_id) -> bin:
+        cur.execute("""SELECT transaction_id FROM temporary_registry""") 
+        cur.fetchone()
+        cur.execute("""CALL new_transaction(%s, %s, %s, %s, %s)""",(1 , message, self.id, recipient_id, str(rsa.sign(str(message).encode(), self.privet_key, 'SHA-256').hex())))
 
 def random_string(a = 16) -> str:
     letters = string.ascii_letters
@@ -35,9 +55,8 @@ def random_string(a = 16) -> str:
 
 
 def create_user() -> str(id):
-    a = Create_User()
-    return a.id
-
+    a = User()
+    return a.passwords
 
 
 def sign_in(id, password) -> bin:
@@ -61,43 +80,24 @@ def create_keys(id, password) -> rsa.key.PublicKey:
     if sign_in(id, password) == 1:
         (public_key, privet_key) = rsa.newkeys(512)
         keys.update([(id , (public_key, privet_key))])
-        
-        print(type(public_key))
+        print(public_key)
+        print(privet_key)
         cur.execute("""CALL delete_key(%s)""", (id,))
         cur.execute("""CALL pub_key_value(%s, %s)""", (id, str(public_key)))
-        return public_key
+        return privet_key
     else:
         print('wrong id or password')
 
 
 
-def send_money(amount, recipient_id, id) -> bin:
-    if sign_in(id, str(input('пароль:'))) == 1:
-        (public_key, privet_key) = rsa.newkeys(512)
-        amount_c = rsa.encrypt(str(amount).encode(), public_key)
-        print(amount_c)
-        print(rsa.decrypt(amount_c, privet_key))
-        amount_c += b'1'
-        print(rsa.decrypt(amount_c, privet_key))
-
-    
-    else:
-        print(0)
-    
 
 
 
-a = Create_User()
-print(Create_User.passwords)
-send_money(5,'kknn', str(input()))
-
-
-
-
+def close_data():
+    conn.commit()
+    cur.close()
+    conn.close()
 
 
 
         
-conn.commit()
-cur.close()
-conn.close()

@@ -1,3 +1,6 @@
+https://stuvel.eu/python-rsa-doc/usage.html
+
+
 CREATE DATABASE hexcoin;
 
 DROP TABLE IF EXISTS public.users;
@@ -76,21 +79,22 @@ ALTER TABLE IF EXISTS public.public_keys
 
 
 
-DROP PROCEDURE IF EXISTS public.delete_key(character);
+DROP TABLE IF EXISTS public.registry;
 
-CREATE OR REPLACE PROCEDURE public.delete_key(
-	IN character)
-LANGUAGE 'plpgsql'
-AS $BODY$
+CREATE TABLE IF NOT EXISTS public.registry
+(
+    id character(16) COLLATE pg_catalog."default" NOT NULL,
+    sender_id character(16) COLLATE pg_catalog."default",
+    recipient_id character(16) COLLATE pg_catalog."default",
+    amount numeric(13,10),
+    digital_signature character(64) COLLATE pg_catalog."default",
+    CONSTRAINT registry_pkey PRIMARY KEY (id)
+)
 
-begin
+TABLESPACE pg_default;
 
-delete from public_keys where id = $1;
-
-end;
-$BODY$;
-ALTER PROCEDURE public.delete_key(character)
-    OWNER TO postgres;
+ALTER TABLE IF EXISTS public.registry
+    OWNER to postgres;
 
 
 
@@ -111,4 +115,24 @@ INSERT INTO Users(id, password_hash_sha224, password_hash_sha256, account_balanc
 END;
 $BODY$;
 ALTER PROCEDURE public.create_user(character, character, character, numeric)
-    OWNER TO postgres;
+    OWNER TO postgres
+
+
+
+CREATE OR REPLACE PROCEDURE public.new_transaction(
+	IN integer,
+	IN character(16),
+	IN character(16),
+	IN numeric(13,10),
+	IN character(64))
+LANGUAGE 'plpgsql'
+AS $BODY$
+
+BEGIN
+
+INSERT INTO registry(id, sender_id, recipient_id, amount, digital_signature) VALUES ($1, $2, $3, $4, $5);
+
+END;
+$BODY$;
+ALTER PROCEDURE public.create_user(character, character, character, numeric)
+    OWNER TO postgres

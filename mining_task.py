@@ -1,11 +1,11 @@
 import hashlib
 import random
-import functions
+import code.functions as functions
 
 k=3
 a = functions.random_string(k)
 s = (hashlib.sha256(str(a).encode())).hexdigest()
-
+print(a)
 ans = 0
 
 
