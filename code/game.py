@@ -1,5 +1,4 @@
-def cost(stonks):
-    a 
+
 
 
 

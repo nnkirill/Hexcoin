@@ -54,7 +54,7 @@ def random_string(a = 16) -> str:
     return random_string
 
 
-def create_user() -> str(id):
+def create_user():
     a = User()
     return a.passwords
 

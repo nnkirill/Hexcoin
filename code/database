@@ -1,65 +1,22 @@
-https://stuvel.eu/python-rsa-doc/usage.html
+-- Database: hexcoin
 
+-- DROP DATABASE IF EXISTS hexcoin;
 
-CREATE DATABASE hexcoin;
-
-DROP TABLE IF EXISTS public.users;
-
-CREATE TABLE IF NOT EXISTS public.users
-(
-    id character(16) COLLATE pg_catalog."default" PRIMARY KEY,
-    password_hash_sha224 character(56) COLLATE pg_catalog."default",
-    password_hash_sha256 character(64) COLLATE pg_catalog."default",
-    account_balance numeric(13,10)
-)
-
-TABLESPACE pg_default;
-
-ALTER TABLE IF EXISTS public.users
-    OWNER to postgres;
+CREATE DATABASE hexcoin
+    WITH
+    OWNER = postgres
+    ENCODING = 'UTF8'
+    LC_COLLATE = 'Russian_Russia.1251'
+    LC_CTYPE = 'Russian_Russia.1251'
+    TABLESPACE = pg_default
+    CONNECTION LIMIT = -1;
 
 
 
-DROP PROCEDURE IF EXISTS public.create_user(character, character, character, numeric);
 
-CREATE OR REPLACE PROCEDURE public.create_user(
-	IN character,
-	IN character,
-	IN character,
-	IN numeric)
-LANGUAGE 'plpgsql'
-AS $BODY$
+-- Table: public.public_keys
 
-BEGIN
-
-INSERT INTO Users(id, password_hash_sha224, password_hash_sha256, account_balance) VALUES ($1, $2, $3, $4);
-
-END;
-$BODY$;
-ALTER PROCEDURE public.create_user(character, character, character, numeric)
-    OWNER TO postgres;
-
-
-
-DROP PROCEDURE IF EXISTS public.sign_in(character);
-
-CREATE OR REPLACE PROCEDURE public.sign_in(
-	IN character)
-LANGUAGE 'plpgsql'
-AS $BODY$
-
-BEGIN
-
-SELECT * FROM Users WHERE id = $1;
-
-end;
-$BODY$;
-ALTER PROCEDURE public.sign_in(character)
-    OWNER TO postgres;
-
-
-
-DROP TABLE IF EXISTS public.public_keys;
+-- DROP TABLE IF EXISTS public.public_keys;
 
 CREATE TABLE IF NOT EXISTS public.public_keys
 (
@@ -79,26 +36,50 @@ ALTER TABLE IF EXISTS public.public_keys
 
 
 
-DROP TABLE IF EXISTS public.registry;
+-- Table: public.temporary_registry
 
-CREATE TABLE IF NOT EXISTS public.registry
+-- DROP TABLE IF EXISTS public.temporary_registry;
+
+CREATE TABLE IF NOT EXISTS public.temporary_registry
 (
-    id character(16) COLLATE pg_catalog."default" NOT NULL,
+    transaction_id integer NOT NULL,
+    amount numeric(13,10),
     sender_id character(16) COLLATE pg_catalog."default",
     recipient_id character(16) COLLATE pg_catalog."default",
-    amount numeric(13,10),
-    digital_signature character(64) COLLATE pg_catalog."default",
-    CONSTRAINT registry_pkey PRIMARY KEY (id)
+    digital_signature character(128) COLLATE pg_catalog."default",
+    transaction_time timestamp with time zone
 )
 
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS public.registry
+ALTER TABLE IF EXISTS public.temporary_registry
     OWNER to postgres;
 
 
 
-DROP PROCEDURE IF EXISTS public.create_user(character, character, character, numeric);
+-- Table: public.users
+
+-- DROP TABLE IF EXISTS public.users;
+
+CREATE TABLE IF NOT EXISTS public.users
+(
+    id character(16) COLLATE pg_catalog."default" NOT NULL,
+    password_hash_sha224 character(56) COLLATE pg_catalog."default",
+    password_hash_sha256 character(64) COLLATE pg_catalog."default",
+    account_balance numeric(13,10),
+    CONSTRAINT users_pkey PRIMARY KEY (id)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.users
+    OWNER to postgres;
+
+
+
+-- PROCEDURE: public.create_user(character, character, character, numeric)
+
+-- DROP PROCEDURE IF EXISTS public.create_user(character, character, character, numeric);
 
 CREATE OR REPLACE PROCEDURE public.create_user(
 	IN character,
@@ -115,24 +96,89 @@ INSERT INTO Users(id, password_hash_sha224, password_hash_sha256, account_balanc
 END;
 $BODY$;
 ALTER PROCEDURE public.create_user(character, character, character, numeric)
-    OWNER TO postgres
+    OWNER TO postgres;
 
 
+
+-- PROCEDURE: public.delete_key(character)
+
+-- DROP PROCEDURE IF EXISTS public.delete_key(character);
+
+CREATE OR REPLACE PROCEDURE public.delete_key(
+	IN character)
+LANGUAGE 'plpgsql'
+AS $BODY$
+
+begin
+
+delete from public_keys where id = $1;
+
+end;
+$BODY$;
+ALTER PROCEDURE public.delete_key(character)
+    OWNER TO postgres;
+
+
+
+-- PROCEDURE: public.new_transaction(integer, numeric, character, character, character)
+
+-- DROP PROCEDURE IF EXISTS public.new_transaction(integer, numeric, character, character, character);
 
 CREATE OR REPLACE PROCEDURE public.new_transaction(
 	IN integer,
-	IN character(16),
-	IN character(16),
-	IN numeric(13,10),
-	IN character(64))
+	IN numeric,
+	IN character,
+	IN character,
+	IN character)
 LANGUAGE 'plpgsql'
 AS $BODY$
 
 BEGIN
 
-INSERT INTO registry(id, sender_id, recipient_id, amount, digital_signature) VALUES ($1, $2, $3, $4, $5);
+INSERT INTO temporary_registry(transaction_id, amount, sender_id, recipient_id, digital_signature, transaction_time) VALUES ($1, $2, $3, $4, $5, now());
 
 END;
 $BODY$;
-ALTER PROCEDURE public.create_user(character, character, character, numeric)
-    OWNER TO postgres
+ALTER PROCEDURE public.new_transaction(integer, numeric, character, character, character)
+    OWNER TO postgres;
+
+
+
+-- PROCEDURE: public.pub_key_value(character, character varying)
+
+-- DROP PROCEDURE IF EXISTS public.pub_key_value(character, character varying);
+
+CREATE OR REPLACE PROCEDURE public.pub_key_value(
+	IN character,
+	IN character varying)
+LANGUAGE 'plpgsql'
+AS $BODY$
+
+begin
+
+INSERT INTO public_keys (id, public_key) VALUES ($1, $2);
+
+end;
+$BODY$;
+ALTER PROCEDURE public.pub_key_value(character, character varying)
+    OWNER TO postgres;
+
+
+
+-- PROCEDURE: public.sign_in(character)
+
+-- DROP PROCEDURE IF EXISTS public.sign_in(character);
+
+CREATE OR REPLACE PROCEDURE public.sign_in(
+	IN character)
+LANGUAGE 'plpgsql'
+AS $BODY$
+
+BEGIN
+
+SELECT * FROM Users WHERE id = $1;
+
+end;
+$BODY$;
+ALTER PROCEDURE public.sign_in(character)
+    OWNER TO postgres;
