@@ -4,9 +4,11 @@ import random
 import string
 import psycopg2
 import hashlib
+import time
+
 
 keys = {}
-number = 0
+number = 1
 conn = psycopg2.connect(host = "localhost", dbname = 'hexcoin', user = 'postgres', password = 'admin', port = 5432)
 cur = conn.cursor()
 
@@ -43,9 +45,11 @@ class User:
 
 
     def send_money(self, message, recipient_id) -> bin:
-        cur.execute("""SELECT transaction_id FROM temporary_registry""") 
-        cur.fetchone()
-        cur.execute("""CALL new_transaction(%s, %s, %s, %s, %s)""",(1 , message, self.id, recipient_id, str(rsa.sign(str(message).encode(), self.privet_key, 'SHA-256').hex())))
+        global number
+        cur.execute("""CALL new_transaction(%s, %s, %s, %s, %s)""",(number , message, self.id, recipient_id, str(rsa.sign(str(message).encode(), self.privet_key, 'SHA-256').hex())))
+        cur.execute("""CALL new_transaction(%s, %s, %s, %s, %s)""",(number , message * -1, self.id, self.id, str(rsa.sign(str(message).encode(), self.privet_key, 'SHA-256').hex())))
+        number += 1
+
 
 def random_string(a = 16) -> str:
     letters = string.ascii_letters
@@ -89,8 +93,21 @@ def create_keys(id, password) -> rsa.key.PublicKey:
         print('wrong id or password')
 
 
+def update_regisrty():
+    cur.execute("SELECT * FROM temporary_registry")
+    rows = []
+    for row in cur:
+        rows.append(row[0])
+        rows.append(row[1])
+        rows.append(row[2])
+        rows.append(row[3])
+        rows.append(row[4])
+        rows.append(row[5])
 
 
+    for i in range(len(rows)// 6):
+        cur.execute("CALL update_registry(%s, %s, %s, %s, %s, %s)", (rows[0], rows[1], rows[2], rows[3], rows[4], rows[5]))
+        rows[0:6].clear()
 
 
 def close_data():
