@@ -1,18 +1,23 @@
--- Database: hexcoin
+CREATE DATABASE hexcoin;
 
--- DROP DATABASE IF EXISTS hexcoin;
+-- Table: public.main_registry
 
-CREATE DATABASE hexcoin
-    WITH
-    OWNER = postgres
-    ENCODING = 'UTF8'
-    LC_COLLATE = 'Russian_Russia.1251'
-    LC_CTYPE = 'Russian_Russia.1251'
-    TABLESPACE = pg_default
-    CONNECTION LIMIT = -1;
+-- DROP TABLE IF EXISTS public.main_registry;
 
+CREATE TABLE IF NOT EXISTS public.main_registry
+(
+    transaction_id integer NOT NULL,
+    amount numeric(13,2),
+    sender_id character(16) COLLATE pg_catalog."default",
+    recipient_id character(16) COLLATE pg_catalog."default",
+    digital_signature character(128) COLLATE pg_catalog."default",
+    transaction_time timestamp with time zone
+)
 
+TABLESPACE pg_default;
 
+ALTER TABLE IF EXISTS public.main_registry
+    OWNER to postgres;
 
 -- Table: public.public_keys
 
@@ -34,13 +39,11 @@ TABLESPACE pg_default;
 ALTER TABLE IF EXISTS public.public_keys
     OWNER to postgres;
 
+-- Table: public.registry
 
+-- DROP TABLE IF EXISTS public.registry;
 
--- Table: public.temporary_registry
-
--- DROP TABLE IF EXISTS public.temporary_registry;
-
-CREATE TABLE IF NOT EXISTS public.temporary_registry
+CREATE TABLE IF NOT EXISTS public.registry
 (
     transaction_id integer NOT NULL,
     amount numeric(13,10),
@@ -52,10 +55,27 @@ CREATE TABLE IF NOT EXISTS public.temporary_registry
 
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS public.temporary_registry
+ALTER TABLE IF EXISTS public.registry
     OWNER to postgres;
 
+-- Table: public.temporary_registry
 
+-- DROP TABLE IF EXISTS public.temporary_registry;
+
+CREATE TABLE IF NOT EXISTS public.temporary_registry
+(
+    transaction_id integer NOT NULL,
+    amount numeric(13,2),
+    sender_id character(16) COLLATE pg_catalog."default",
+    recipient_id character(16) COLLATE pg_catalog."default",
+    digital_signature character(128) COLLATE pg_catalog."default",
+    transaction_time timestamp with time zone
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.temporary_registry
+    OWNER to postgres;
 
 -- Table: public.users
 
@@ -66,7 +86,7 @@ CREATE TABLE IF NOT EXISTS public.users
     id character(16) COLLATE pg_catalog."default" NOT NULL,
     password_hash_sha224 character(56) COLLATE pg_catalog."default",
     password_hash_sha256 character(64) COLLATE pg_catalog."default",
-    account_balance numeric(13,10),
+    account_balance numeric(13,2),
     CONSTRAINT users_pkey PRIMARY KEY (id)
 )
 
@@ -75,7 +95,25 @@ TABLESPACE pg_default;
 ALTER TABLE IF EXISTS public.users
     OWNER to postgres;
 
+-- PROCEDURE: public.change_balance(integer, character)
 
+-- DROP PROCEDURE IF EXISTS public.change_balance(integer, character);
+
+CREATE OR REPLACE PROCEDURE public.change_balance(
+	IN integer,
+	IN character)
+LANGUAGE 'plpgsql'
+AS $BODY$
+
+BEGIN
+
+update users
+set account_balance = account_balance + $1 where id = $2;
+
+END;
+$BODY$;
+ALTER PROCEDURE public.change_balance(integer, character)
+    OWNER TO postgres;
 
 -- PROCEDURE: public.create_user(character, character, character, numeric)
 
@@ -98,8 +136,6 @@ $BODY$;
 ALTER PROCEDURE public.create_user(character, character, character, numeric)
     OWNER TO postgres;
 
-
-
 -- PROCEDURE: public.delete_key(character)
 
 -- DROP PROCEDURE IF EXISTS public.delete_key(character);
@@ -117,8 +153,6 @@ end;
 $BODY$;
 ALTER PROCEDURE public.delete_key(character)
     OWNER TO postgres;
-
-
 
 -- PROCEDURE: public.new_transaction(integer, numeric, character, character, character)
 
@@ -142,8 +176,6 @@ $BODY$;
 ALTER PROCEDURE public.new_transaction(integer, numeric, character, character, character)
     OWNER TO postgres;
 
-
-
 -- PROCEDURE: public.pub_key_value(character, character varying)
 
 -- DROP PROCEDURE IF EXISTS public.pub_key_value(character, character varying);
@@ -163,8 +195,6 @@ $BODY$;
 ALTER PROCEDURE public.pub_key_value(character, character varying)
     OWNER TO postgres;
 
-
-
 -- PROCEDURE: public.sign_in(character)
 
 -- DROP PROCEDURE IF EXISTS public.sign_in(character);
@@ -181,4 +211,27 @@ SELECT * FROM Users WHERE id = $1;
 end;
 $BODY$;
 ALTER PROCEDURE public.sign_in(character)
+    OWNER TO postgres;
+
+-- PROCEDURE: public.update_registry(integer, numeric, character, character, character, timestamp with time zone)
+
+-- DROP PROCEDURE IF EXISTS public.update_registry(integer, numeric, character, character, character, timestamp with time zone);
+
+CREATE OR REPLACE PROCEDURE public.update_registry(
+	IN integer,
+	IN numeric,
+	IN character,
+	IN character,
+	IN character,
+	IN timestamp with time zone)
+LANGUAGE 'plpgsql'
+AS $BODY$
+
+BEGIN
+
+INSERT INTO main_registry(transaction_id, amount, sender_id, recipient_id, digital_signature, transaction_time) VALUES ($1, $2, $3, $4, $5, $6);
+
+END;
+$BODY$;
+ALTER PROCEDURE public.update_registry(integer, numeric, character, character, character, timestamp with time zone)
     OWNER TO postgres;
